@@ -1,159 +1,228 @@
-; shamelessly adapted from the 32-bit version at http://www.muppetlabs.com/~breadbox/software/tiny/teensy.html
+; ==========================================
+; ========= MACROS AND BOILERPLATE =========
+; ==========================================
+
+;WHEN I SAY BITS, YOU SAY 64!
 BITS 64
 
-		org	 0x00400000
+;the address offset for x86-64
+org	 0x00400000
 
+;a bunch of definitions so I don't have to memorize syscall numbers
 %include "syscalls.asm"
 
-;2 bytes smaller than mov!
-%macro  minimov 2
+;this is a hack that's 2 bytes smaller than mov!
+%macro minimov 2
 	push %2
 	pop %1
 %endmacro
 
-ehdr:									; Elf64_Ehdr
-		db	0x7F, "ELF", 2, 1, 1, 0		; e_ident
+; ==============================
+; ========= ELF HEADER =========
+; ==============================
 
-;hide this shit in the padding lmao
-__padding:
-		minimov rax, sys_close
-		minimov rdi, 2
-		jmp __uh3
+ehdr: ; Elf64_Ehdr
 
-		dw	2							; e_type
-		dw	0x3e						; e_machine
-		dd	1							; e_version
-		dq	__padding						; e_entry
-		dq	phdr - $$					; e_phoff
-		dq	0							; e_shoff
-		dd	0							; e_flags
-		dw	ehdrsize					; e_ehsize
-		dw	phdrsize					; e_phentsize
-		; dw	1							; e_phnum
-		; dw	0							; e_shentsize
-		; dw	0							; e_shnum
-		; dw	0							; e_shstrndx
+e_ident:
+	db 0x7F, "ELF", 2, 1, 1, 0
 
-ehdrsize	equ	 $ - ehdr
+e_padding:
+	;we have 8 bytes of padding to put code inside!
+	;here we're about to close stderr so out program is quiet
+	minimov rax, sys_close
+	minimov rdi, 2
+	jmp p_flags
 
-phdr:									; Elf64_Phdr
-		dd	1							; p_type
-__uh3: ;p_flags is supposed to be 0x0f, and syscall is 0x0f05, so I can put code here!
-		syscall
-		jmp __uh
-		; dd	0xf							; p_flags
+e_type:
+	dw 2
+e_machine:
+	dw 0x3e
+e_version:
+	dd 1
+e_entry:
+	dq e_padding
+e_phoff:
+	dq phdr - $$
+e_shoff:
+	dq 0
+e_flags:
+	dd 0
+e_ehsize:
+	dw ehdrsize
+e_phentsize:
+	dw phdrsize
 
-		dq	0							; p_offset
-		dq	$$							; p_vaddr
+; the program header starts inside of the elf header
+; shamelessly adapted from the 32-bit version at
+; http://www.muppetlabs.com/~breadbox/software/tiny/teensy.html
 
-__uh: ;apparently p_paddr can be nonsense?
-		push rax
-		; pipe with fds on stack
-		minimov rax, sys_pipe
-		minimov rdi, rsp
-		jmp _start
+ehdrsize equ $ - ehdr
 
-		; dq	$$							; p_paddr
-		dq	filesize					; p_filesz
-		dq	filesize					; p_memsz
-		dq	0x10						; p_align
+; ==================================
+; ========= PROGRAM HEADER =========
+; ==================================
 
-phdrsize	equ	 $ - phdr
+phdr: ; Elf64_Phdr
 
-__tag:
+p_type:
+	dd 1
 
-	db "blackle" ;it's me!
+p_flags:
+	;p_flags is supposed to be 0x0f, and syscall is 0x0f05;
+	;the kernel only looks at the bottom byte, so I can put code here!
+	syscall
+	jmp p_paddr
+
+p_offset:
+	dq 0
+p_vaddr:
+	dq $$
+
+p_paddr: ;apparently p_paddr can be nonsense?
+	;move stack up
+	push rax
+	; pipe with fds on stack
+	minimov rax, sys_pipe
+	minimov rdi, rsp
+	jmp _start
+
+p_filesz:
+	dq filesize
+p_memsz:
+	dq filesize
+p_align:
+	dq 0x10
+
+phdrsize equ $ - phdr
+
+; ==================================
+; ========= AUTHOR NAME ;3 =========
+; ==================================
+
+blackle:
+	;a null terminator so `strings` will find it >;3c
+	db "made by blackle!",0 ;it's me!
+	;this is a lot of unused bytes that idk what to do with
+
+
+; ===========================
+; ========= CODE!!! =========
+; ===========================
 
 _start:
-		syscall
+	;we actually started execution in e_padding and jumped to
+	;p_flags and then p_paddr. so check out that code if you haven't already
+	syscall
 
-		; fork 
-		minimov rax, sys_fork
-		syscall
-		pop	rdi
-		test rax,rax
-		jz __parent
+	;get the pipe fds into rdi
+	pop	rdi 
 
-__child:
-		;dup2 read->stdin
-		minimov rax, sys_dup2
-		; pop	rdi
-		; xor rsi,rsi
-		syscall
+	; fork 
+	minimov rax, sys_fork
+	syscall
+	test rax,rax
+	jz parent
 
-		;close the write end
-		; apparently we don't need this as parent?
-		; minimov rax, sys_close
-		; shr rdi, 32
-		; syscall
+; ===============================
+; ========= APLAY CHILD =========
+; ===============================
 
-		; envp -> rdx
-		; pop rdx ;argc
-		; inc rdx ;argc + 1
-		; shl rdx, 3 ; (argc+1)*8
+child:
+	;dup2 read->stdin
+	minimov rax, sys_dup2
+	;normally we have to clear rsi for stdin (0), but
+	;the register starts at 0 and we haven't touched it yet
 
-		; assume argc = 1
-		minimov rdx, 16+8
-		add rdx,rsp
+	;also we'd usually mask out the lower bytes of rdi
+	;to get the read end of the pipe, but the kernel
+	;only looks at the lower bytes anyway
+	syscall
 
-		;setup argv
-		push 0
-		push __aplay
+	; this puts envp into rdx, assuming argc = 1
+	; this is magic ;3
+	minimov rdx, 16+8
+	add rdx,rsp
 
-		; call aplay
-		minimov rax, sys_execve
-		minimov	rdi, __aplay
-		minimov	rsi, rsp
-		syscall
+	;setup argv as {"/bin/aplay", 0}
+	push 0
+	push aplay_string
 
-	; anything can go here
+	; execve aplay
+	minimov rax, sys_execve
 
-__parent:
-		;get pipe write fd
-		shr rdi, 32
+	; we just pushed the address to aplay_string so
+	; we can pop it into rdi instead of doing another minimov
+	pop rdi
+	push rdi
 
-		; xor r15, r15
-__reset:
-		xor r14, r14
-__sampleloop:
-		inc r14
-		
-		push r15
-		xor r13, r14
-		shr r13, 1
+	minimov	rsi, rsp
+	syscall
 
-		cmp r14w, 1024*2
-		ja __noror
-		; xor r13, r14
-		bswap r15
-		not r15
+; ============================================
+; ========= SAMPLE GENERATING PARENT =========
+; ============================================
 
-		cmp r14w, 512
-		ja __noror
-		; dec r13
-		bswap r13d
+parent:
+	;get pipe write fd by shifting down the upper bytes
+	shr rdi, 32
 
-__noror:
-		xor r15, r13
-		ror r15, 8
-		not r15
+	;we want r14, r15, and r13 to be zero but we haven't 
+	;touched them, and the kernel initialized them that way
+	;so we don't have to do anything! :D
+sample_loop:
+	inc r14
 
+	;push r15 onto the stack as 8 packed samples
+	push r15
 
-		cmp r14w, 1024*8
-		jnz __sampleloop
+	;do some weird stuff to r13
+	xor r13, r14
+	shr r13, 1
 
-		minimov rsi, rsp
-		minimov rdx, 1024*8*8
-		minimov rax, sys_write
-		; minimov rdi, 1
-		syscall
+	;make the last 2 bars sound different
+	;comparing on r14w is a byte smaller somehow
+	cmp r14w, 1024*2
+	ja sample_loop_end
+	bswap r15
+	not r15
 
-		sub rsp, rdx
-		jmp __reset
+	;make the last half-bar sound noisy
+	cmp r14w, 512
+	ja sample_loop_end
+	bswap r13d
 
-__aplay:
-		db '/usr/bin/aplay';,0,0 ;<-- these last two could be removed
+sample_loop_end:
+	;do some weird stuff to r15 that sounds cool
+	xor r15, r13
+	ror r15, 8
+	not r15 ;this makes it sound like a ring modulator?
 
-__end_of_file:
+	;repeatedly create samples until we have 8 "bars"
+	cmp r14w, 1024*8
+	jnz sample_loop
+
+write_loop
+	;write generated samples to pipe
+	minimov rsi, rsp
+	minimov rdx, 1024*8*8
+	minimov rax, sys_write
+	;uncomment this if you want to write samples to stdout
+	;good for saving to a file!
+	; minimov rdi, 1
+	syscall
+
+	;keep writing those same samples until we're killed
+	jmp write_loop
+
+; ================================
+; ========= STRING TABLE =========
+; ================================
+
+;just one string :3
+
+aplay_string:
+	;this should be null terminated, but there is 0s in
+	;memory after this that the kernel filled in for us
+	db '/usr/bin/aplay'
 
 filesize	equ	$ - $$

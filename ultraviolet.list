@@ -1,504 +1,572 @@
      1                                  ; shamelessly adapted from the 32-bit version at http://www.muppetlabs.com/~breadbox/software/tiny/teensy.html
-     2                                  BITS 64
-     3                                  
-     4                                  		org	 0x00400000
-     5                                  
-     6                                  %include "syscalls.asm"
-     7                              <1> %define sys_read 0
-     8                              <1> %define sys_write 1
-     9                              <1> %define sys_open 2
-    10                              <1> %define sys_close 3
-    11                              <1> %define sys_stat 4
-    12                              <1> %define sys_fstat 5
-    13                              <1> %define sys_lstat 6
-    14                              <1> %define sys_poll 7
-    15                              <1> %define sys_lseek 8
-    16                              <1> %define sys_mmap 9
-    17                              <1> %define sys_mprotect 10
-    18                              <1> %define sys_munmap 11
-    19                              <1> %define sys_brk 12
-    20                              <1> %define sys_rt_sigaction 13
-    21                              <1> %define sys_rt_sigprocmask 14
-    22                              <1> %define sys_rt_sigreturn 15
-    23                              <1> %define sys_ioctl 16
-    24                              <1> %define sys_pread64 17
-    25                              <1> %define sys_pwrite64 18
-    26                              <1> %define sys_readv 19
-    27                              <1> %define sys_writev 20
-    28                              <1> %define sys_access 21
-    29                              <1> %define sys_pipe 22
-    30                              <1> %define sys_select 23
-    31                              <1> %define sys_sched_yield 24
-    32                              <1> %define sys_mremap 25
-    33                              <1> %define sys_msync 26
-    34                              <1> %define sys_mincore 27
-    35                              <1> %define sys_madvise 28
-    36                              <1> %define sys_shmget 29
-    37                              <1> %define sys_shmat 30
-    38                              <1> %define sys_shmctl 31
-    39                              <1> %define sys_dup 32
-    40                              <1> %define sys_dup2 33
-    41                              <1> %define sys_pause 34
-    42                              <1> %define sys_nanosleep 35
-    43                              <1> %define sys_getitimer 36
-    44                              <1> %define sys_alarm 37
-    45                              <1> %define sys_setitimer 38
-    46                              <1> %define sys_getpid 39
-    47                              <1> %define sys_sendfile 40
-    48                              <1> %define sys_socket 41
-    49                              <1> %define sys_connect 42
-    50                              <1> %define sys_accept 43
-    51                              <1> %define sys_sendto 44
-    52                              <1> %define sys_recvfrom 45
-    53                              <1> %define sys_sendmsg 46
-    54                              <1> %define sys_recvmsg 47
-    55                              <1> %define sys_shutdown 48
-    56                              <1> %define sys_bind 49
-    57                              <1> %define sys_listen 50
-    58                              <1> %define sys_getsockname 51
-    59                              <1> %define sys_getpeername 52
-    60                              <1> %define sys_socketpair 53
-    61                              <1> %define sys_setsockopt 54
-    62                              <1> %define sys_getsockopt 55
-    63                              <1> %define sys_clone 56
-    64                              <1> %define sys_fork 57
-    65                              <1> %define sys_vfork 58
-    66                              <1> %define sys_execve 59
-    67                              <1> %define sys_exit 60
-    68                              <1> %define sys_wait4 61
-    69                              <1> %define sys_kill 62
-    70                              <1> %define sys_uname 63
-    71                              <1> %define sys_semget 64
-    72                              <1> %define sys_semop 65
-    73                              <1> %define sys_semctl 66
-    74                              <1> %define sys_shmdt 67
-    75                              <1> %define sys_msgget 68
-    76                              <1> %define sys_msgsnd 69
-    77                              <1> %define sys_msgrcv 70
-    78                              <1> %define sys_msgctl 71
-    79                              <1> %define sys_fcntl 72
-    80                              <1> %define sys_flock 73
-    81                              <1> %define sys_fsync 74
-    82                              <1> %define sys_fdatasync 75
-    83                              <1> %define sys_truncate 76
-    84                              <1> %define sys_ftruncate 77
-    85                              <1> %define sys_getdents 78
-    86                              <1> %define sys_getcwd 79
-    87                              <1> %define sys_chdir 80
-    88                              <1> %define sys_fchdir 81
-    89                              <1> %define sys_rename 82
-    90                              <1> %define sys_mkdir 83
-    91                              <1> %define sys_rmdir 84
-    92                              <1> %define sys_creat 85
-    93                              <1> %define sys_link 86
-    94                              <1> %define sys_unlink 87
-    95                              <1> %define sys_symlink 88
-    96                              <1> %define sys_readlink 89
-    97                              <1> %define sys_chmod 90
-    98                              <1> %define sys_fchmod 91
-    99                              <1> %define sys_chown 92
-   100                              <1> %define sys_fchown 93
-   101                              <1> %define sys_lchown 94
-   102                              <1> %define sys_umask 95
-   103                              <1> %define sys_gettimeofday 96
-   104                              <1> %define sys_getrlimit 97
-   105                              <1> %define sys_getrusage 98
-   106                              <1> %define sys_sysinfo 99
-   107                              <1> %define sys_times 100
-   108                              <1> %define sys_ptrace 101
-   109                              <1> %define sys_getuid 102
-   110                              <1> %define sys_syslog 103
-   111                              <1> %define sys_getgid 104
-   112                              <1> %define sys_setuid 105
-   113                              <1> %define sys_setgid 106
-   114                              <1> %define sys_geteuid 107
-   115                              <1> %define sys_getegid 108
-   116                              <1> %define sys_setpgid 109
-   117                              <1> %define sys_getppid 110
-   118                              <1> %define sys_getpgrp 111
-   119                              <1> %define sys_setsid 112
-   120                              <1> %define sys_setreuid 113
-   121                              <1> %define sys_setregid 114
-   122                              <1> %define sys_getgroups 115
-   123                              <1> %define sys_setgroups 116
-   124                              <1> %define sys_setresuid 117
-   125                              <1> %define sys_getresuid 118
-   126                              <1> %define sys_setresgid 119
-   127                              <1> %define sys_getresgid 120
-   128                              <1> %define sys_getpgid 121
-   129                              <1> %define sys_setfsuid 122
-   130                              <1> %define sys_setfsgid 123
-   131                              <1> %define sys_getsid 124
-   132                              <1> %define sys_capget 125
-   133                              <1> %define sys_capset 126
-   134                              <1> %define sys_rt_sigpending 127
-   135                              <1> %define sys_rt_sigtimedwait 128
-   136                              <1> %define sys_rt_sigqueueinfo 129
-   137                              <1> %define sys_rt_sigsuspend 130
-   138                              <1> %define sys_sigaltstack 131
-   139                              <1> %define sys_utime 132
-   140                              <1> %define sys_mknod 133
-   141                              <1> %define sys_uselib 134
-   142                              <1> %define sys_personality 135
-   143                              <1> %define sys_ustat 136
-   144                              <1> %define sys_statfs 137
-   145                              <1> %define sys_fstatfs 138
-   146                              <1> %define sys_sysfs 139
-   147                              <1> %define sys_getpriority 140
-   148                              <1> %define sys_setpriority 141
-   149                              <1> %define sys_sched_setparam 142
-   150                              <1> %define sys_sched_getparam 143
-   151                              <1> %define sys_sched_setscheduler 144
-   152                              <1> %define sys_sched_getscheduler 145
-   153                              <1> %define sys_sched_get_priority_max 146
-   154                              <1> %define sys_sched_get_priority_min 147
-   155                              <1> %define sys_sched_rr_get_interval 148
-   156                              <1> %define sys_mlock 149
-   157                              <1> %define sys_munlock 150
-   158                              <1> %define sys_mlockall 151
-   159                              <1> %define sys_munlockall 152
-   160                              <1> %define sys_vhangup 153
-   161                              <1> %define sys_modify_ldt 154
-   162                              <1> %define sys_pivot_root 155
-   163                              <1> %define sys__sysctl 156
-   164                              <1> %define sys_prctl 157
-   165                              <1> %define sys_arch_prctl 158
-   166                              <1> %define sys_adjtimex 159
-   167                              <1> %define sys_setrlimit 160
-   168                              <1> %define sys_chroot 161
-   169                              <1> %define sys_sync 162
-   170                              <1> %define sys_acct 163
-   171                              <1> %define sys_settimeofday 164
-   172                              <1> %define sys_mount 165
-   173                              <1> %define sys_umount2 166
-   174                              <1> %define sys_swapon 167
-   175                              <1> %define sys_swapoff 168
-   176                              <1> %define sys_reboot 169
-   177                              <1> %define sys_sethostname 170
-   178                              <1> %define sys_setdomainname 171
-   179                              <1> %define sys_iopl 172
-   180                              <1> %define sys_ioperm 173
-   181                              <1> %define sys_create_module 174
-   182                              <1> %define sys_init_module 175
-   183                              <1> %define sys_delete_module 176
-   184                              <1> %define sys_get_kernel_syms 177
-   185                              <1> %define sys_query_module 178
-   186                              <1> %define sys_quotactl 179
-   187                              <1> %define sys_nfsservctl 180
-   188                              <1> %define sys_getpmsg 181
-   189                              <1> %define sys_putpmsg 182
-   190                              <1> %define sys_afs_syscall 183
-   191                              <1> %define sys_tuxcall 184
-   192                              <1> %define sys_security 185
-   193                              <1> %define sys_gettid 186
-   194                              <1> %define sys_readahead 187
-   195                              <1> %define sys_setxattr 188
-   196                              <1> %define sys_lsetxattr 189
-   197                              <1> %define sys_fsetxattr 190
-   198                              <1> %define sys_getxattr 191
-   199                              <1> %define sys_lgetxattr 192
-   200                              <1> %define sys_fgetxattr 193
-   201                              <1> %define sys_listxattr 194
-   202                              <1> %define sys_llistxattr 195
-   203                              <1> %define sys_flistxattr 196
-   204                              <1> %define sys_removexattr 197
-   205                              <1> %define sys_lremovexattr 198
-   206                              <1> %define sys_fremovexattr 199
-   207                              <1> %define sys_tkill 200
-   208                              <1> %define sys_time 201
-   209                              <1> %define sys_futex 202
-   210                              <1> %define sys_sched_setaffinity 203
-   211                              <1> %define sys_sched_getaffinity 204
-   212                              <1> %define sys_set_thread_area 205
-   213                              <1> %define sys_io_setup 206
-   214                              <1> %define sys_io_destroy 207
-   215                              <1> %define sys_io_getevents 208
-   216                              <1> %define sys_io_submit 209
-   217                              <1> %define sys_io_cancel 210
-   218                              <1> %define sys_get_thread_area 211
-   219                              <1> %define sys_lookup_dcookie 212
-   220                              <1> %define sys_epoll_create 213
-   221                              <1> %define sys_epoll_ctl_old 214
-   222                              <1> %define sys_epoll_wait_old 215
-   223                              <1> %define sys_remap_file_pages 216
-   224                              <1> %define sys_getdents64 217
-   225                              <1> %define sys_set_tid_address 218
-   226                              <1> %define sys_restart_syscall 219
-   227                              <1> %define sys_semtimedop 220
-   228                              <1> %define sys_fadvise64 221
-   229                              <1> %define sys_timer_create 222
-   230                              <1> %define sys_timer_settime 223
-   231                              <1> %define sys_timer_gettime 224
-   232                              <1> %define sys_timer_getoverrun 225
-   233                              <1> %define sys_timer_delete 226
-   234                              <1> %define sys_clock_settime 227
-   235                              <1> %define sys_clock_gettime 228
-   236                              <1> %define sys_clock_getres 229
-   237                              <1> %define sys_clock_nanosleep 230
-   238                              <1> %define sys_exit_group 231
-   239                              <1> %define sys_epoll_wait 232
-   240                              <1> %define sys_epoll_ctl 233
-   241                              <1> %define sys_tgkill 234
-   242                              <1> %define sys_utimes 235
-   243                              <1> %define sys_vserver 236
-   244                              <1> %define sys_mbind 237
-   245                              <1> %define sys_set_mempolicy 238
-   246                              <1> %define sys_get_mempolicy 239
-   247                              <1> %define sys_mq_open 240
-   248                              <1> %define sys_mq_unlink 241
-   249                              <1> %define sys_mq_timedsend 242
-   250                              <1> %define sys_mq_timedreceive 243
-   251                              <1> %define sys_mq_notify 244
-   252                              <1> %define sys_mq_getsetattr 245
-   253                              <1> %define sys_kexec_load 246
-   254                              <1> %define sys_waitid 247
-   255                              <1> %define sys_add_key 248
-   256                              <1> %define sys_request_key 249
-   257                              <1> %define sys_keyctl 250
-   258                              <1> %define sys_ioprio_set 251
-   259                              <1> %define sys_ioprio_get 252
-   260                              <1> %define sys_inotify_init 253
-   261                              <1> %define sys_inotify_add_watch 254
-   262                              <1> %define sys_inotify_rm_watch 255
-   263                              <1> %define sys_migrate_pages 256
-   264                              <1> %define sys_openat 257
-   265                              <1> %define sys_mkdirat 258
-   266                              <1> %define sys_mknodat 259
-   267                              <1> %define sys_fchownat 260
-   268                              <1> %define sys_futimesat 261
-   269                              <1> %define sys_newfstatat 262
-   270                              <1> %define sys_unlinkat 263
-   271                              <1> %define sys_renameat 264
-   272                              <1> %define sys_linkat 265
-   273                              <1> %define sys_symlinkat 266
-   274                              <1> %define sys_readlinkat 267
-   275                              <1> %define sys_fchmodat 268
-   276                              <1> %define sys_faccessat 269
-   277                              <1> %define sys_pselect6 270
-   278                              <1> %define sys_ppoll 271
-   279                              <1> %define sys_unshare 272
-   280                              <1> %define sys_set_robust_list 273
-   281                              <1> %define sys_get_robust_list 274
-   282                              <1> %define sys_splice 275
-   283                              <1> %define sys_tee 276
-   284                              <1> %define sys_sync_file_range 277
-   285                              <1> %define sys_vmsplice 278
-   286                              <1> %define sys_move_pages 279
-   287                              <1> %define sys_utimensat 280
-   288                              <1> %define sys_epoll_pwait 281
-   289                              <1> %define sys_signalfd 282
-   290                              <1> %define sys_timerfd_create 283
-   291                              <1> %define sys_eventfd 284
-   292                              <1> %define sys_fallocate 285
-   293                              <1> %define sys_timerfd_settime 286
-   294                              <1> %define sys_timerfd_gettime 287
-   295                              <1> %define sys_accept4 288
-   296                              <1> %define sys_signalfd4 289
-   297                              <1> %define sys_eventfd2 290
-   298                              <1> %define sys_epoll_create1 291
-   299                              <1> %define sys_dup3 292
-   300                              <1> %define sys_pipe2 293
-   301                              <1> %define sys_inotify_init1 294
-   302                              <1> %define sys_preadv 295
-   303                              <1> %define sys_pwritev 296
-   304                              <1> %define sys_rt_tgsigqueueinfo 297
-   305                              <1> %define sys_perf_event_open 298
-   306                              <1> %define sys_recvmmsg 299
-   307                              <1> %define sys_fanotify_init 300
-   308                              <1> %define sys_fanotify_mark 301
-   309                              <1> %define sys_prlimit64 302
-   310                              <1> %define sys_name_to_handle_at 303
-   311                              <1> %define sys_open_by_handle_at 304
-   312                              <1> %define sys_clock_adjtime 305
-   313                              <1> %define sys_syncfs 306
-   314                              <1> %define sys_sendmmsg 307
-   315                              <1> %define sys_setns 308
-   316                              <1> %define sys_getcpu 309
-   317                              <1> %define sys_process_vm_readv 310
-   318                              <1> %define sys_process_vm_writev 311
-   319                              <1> %define sys_kcmp 312
-   320                              <1> %define sys_finit_module 313
-   321                              <1> %define sys_sched_setattr 314
-   322                              <1> %define sys_sched_getattr 315
-   323                              <1> %define sys_renameat2 316
-   324                              <1> %define sys_memfd_create 319
-   325                                  
-   326                                  ;2 bytes smaller than mov!
-   327                                  %macro  minimov 2
-   328                                  	push %2
-   329                                  	pop %1
-   330                                  %endmacro
-   331                                  
-   332                                  ehdr:									; Elf64_Ehdr
-   333 00000000 7F454C4602010100        		db	0x7F, "ELF", 2, 1, 1, 0		; e_ident
-   334                                  
-   335                                  ;hide this shit in the padding lmao
-   336                                  __padding:
-   337                                  		minimov rax, sys_close
-   338 00000008 6A03                <1>  push %2
-   339 0000000A 58                  <1>  pop %1
-   340                                  		minimov rdi, 2
-   341 0000000B 6A02                <1>  push %2
-   342 0000000D 5F                  <1>  pop %1
-   343 0000000E EB2C                    		jmp __uh3
-   344                                  
-   345 00000010 0200                    		dw	2							; e_type
-   346 00000012 3E00                    		dw	0x3e						; e_machine
-   347 00000014 01000000                		dd	1							; e_version
-   348 00000018 [0800000000000000]      		dq	__padding						; e_entry
-   349 00000020 3800000000000000        		dq	phdr - $$					; e_phoff
-   350 00000028 0000000000000000        		dq	0							; e_shoff
-   351 00000030 00000000                		dd	0							; e_flags
-   352 00000034 3800                    		dw	ehdrsize					; e_ehsize
-   353 00000036 3800                    		dw	phdrsize					; e_phentsize
-   354                                  		; dw	1							; e_phnum
-   355                                  		; dw	0							; e_shentsize
-   356                                  		; dw	0							; e_shnum
-   357                                  		; dw	0							; e_shstrndx
-   358                                  
-   359                                  ehdrsize	equ	 $ - ehdr
-   360                                  
-   361                                  phdr:									; Elf64_Phdr
-   362 00000038 01000000                		dd	1							; p_type
-   363                                  __uh3: ;p_flags is supposed to be 0x0f, and syscall is 0x0f05, so I can put code here!
-   364 0000003C 0F05                    		syscall
-   365 0000003E EB10                    		jmp __uh
-   366                                  		; dd	0xf							; p_flags
-   367                                  
-   368 00000040 0000000000000000        		dq	0							; p_offset
-   369 00000048 [0000000000000000]      		dq	$$							; p_vaddr
-   370                                  
-   371                                  __uh: ;apparently p_paddr can be nonsense?
-   372 00000050 50                      		push rax
-   373                                  		; pipe with fds on stack
-   374                                  		minimov rax, sys_pipe
-   375 00000051 6A16                <1>  push %2
-   376 00000053 58                  <1>  pop %1
-   377                                  		minimov rdi, rsp
-   378 00000054 54                  <1>  push %2
-   379 00000055 5F                  <1>  pop %1
-   380 00000056 EB1F                    		jmp _start
-   381                                  
-   382                                  		; dq	$$							; p_paddr
-   383 00000058 0001000000000000        		dq	filesize					; p_filesz
-   384 00000060 0001000000000000        		dq	filesize					; p_memsz
-   385 00000068 1000000000000000        		dq	0x10						; p_align
+     2                                  
+     3                                  ; ==========================================
+     4                                  ; ========= MACROS AND BOILERPLATE =========
+     5                                  ; ==========================================
+     6                                  
+     7                                  ;WHEN I SAY BITS, YOU SAY 64!
+     8                                  BITS 64
+     9                                  
+    10                                  ;the address offset for x86-64
+    11                                  org	 0x00400000
+    12                                  
+    13                                  ;a bunch of definitions so I don't have to memorize syscall numbers
+    14                                  %include "syscalls.asm"
+    15                              <1> %define sys_read 0
+    16                              <1> %define sys_write 1
+    17                              <1> %define sys_open 2
+    18                              <1> %define sys_close 3
+    19                              <1> %define sys_stat 4
+    20                              <1> %define sys_fstat 5
+    21                              <1> %define sys_lstat 6
+    22                              <1> %define sys_poll 7
+    23                              <1> %define sys_lseek 8
+    24                              <1> %define sys_mmap 9
+    25                              <1> %define sys_mprotect 10
+    26                              <1> %define sys_munmap 11
+    27                              <1> %define sys_brk 12
+    28                              <1> %define sys_rt_sigaction 13
+    29                              <1> %define sys_rt_sigprocmask 14
+    30                              <1> %define sys_rt_sigreturn 15
+    31                              <1> %define sys_ioctl 16
+    32                              <1> %define sys_pread64 17
+    33                              <1> %define sys_pwrite64 18
+    34                              <1> %define sys_readv 19
+    35                              <1> %define sys_writev 20
+    36                              <1> %define sys_access 21
+    37                              <1> %define sys_pipe 22
+    38                              <1> %define sys_select 23
+    39                              <1> %define sys_sched_yield 24
+    40                              <1> %define sys_mremap 25
+    41                              <1> %define sys_msync 26
+    42                              <1> %define sys_mincore 27
+    43                              <1> %define sys_madvise 28
+    44                              <1> %define sys_shmget 29
+    45                              <1> %define sys_shmat 30
+    46                              <1> %define sys_shmctl 31
+    47                              <1> %define sys_dup 32
+    48                              <1> %define sys_dup2 33
+    49                              <1> %define sys_pause 34
+    50                              <1> %define sys_nanosleep 35
+    51                              <1> %define sys_getitimer 36
+    52                              <1> %define sys_alarm 37
+    53                              <1> %define sys_setitimer 38
+    54                              <1> %define sys_getpid 39
+    55                              <1> %define sys_sendfile 40
+    56                              <1> %define sys_socket 41
+    57                              <1> %define sys_connect 42
+    58                              <1> %define sys_accept 43
+    59                              <1> %define sys_sendto 44
+    60                              <1> %define sys_recvfrom 45
+    61                              <1> %define sys_sendmsg 46
+    62                              <1> %define sys_recvmsg 47
+    63                              <1> %define sys_shutdown 48
+    64                              <1> %define sys_bind 49
+    65                              <1> %define sys_listen 50
+    66                              <1> %define sys_getsockname 51
+    67                              <1> %define sys_getpeername 52
+    68                              <1> %define sys_socketpair 53
+    69                              <1> %define sys_setsockopt 54
+    70                              <1> %define sys_getsockopt 55
+    71                              <1> %define sys_clone 56
+    72                              <1> %define sys_fork 57
+    73                              <1> %define sys_vfork 58
+    74                              <1> %define sys_execve 59
+    75                              <1> %define sys_exit 60
+    76                              <1> %define sys_wait4 61
+    77                              <1> %define sys_kill 62
+    78                              <1> %define sys_uname 63
+    79                              <1> %define sys_semget 64
+    80                              <1> %define sys_semop 65
+    81                              <1> %define sys_semctl 66
+    82                              <1> %define sys_shmdt 67
+    83                              <1> %define sys_msgget 68
+    84                              <1> %define sys_msgsnd 69
+    85                              <1> %define sys_msgrcv 70
+    86                              <1> %define sys_msgctl 71
+    87                              <1> %define sys_fcntl 72
+    88                              <1> %define sys_flock 73
+    89                              <1> %define sys_fsync 74
+    90                              <1> %define sys_fdatasync 75
+    91                              <1> %define sys_truncate 76
+    92                              <1> %define sys_ftruncate 77
+    93                              <1> %define sys_getdents 78
+    94                              <1> %define sys_getcwd 79
+    95                              <1> %define sys_chdir 80
+    96                              <1> %define sys_fchdir 81
+    97                              <1> %define sys_rename 82
+    98                              <1> %define sys_mkdir 83
+    99                              <1> %define sys_rmdir 84
+   100                              <1> %define sys_creat 85
+   101                              <1> %define sys_link 86
+   102                              <1> %define sys_unlink 87
+   103                              <1> %define sys_symlink 88
+   104                              <1> %define sys_readlink 89
+   105                              <1> %define sys_chmod 90
+   106                              <1> %define sys_fchmod 91
+   107                              <1> %define sys_chown 92
+   108                              <1> %define sys_fchown 93
+   109                              <1> %define sys_lchown 94
+   110                              <1> %define sys_umask 95
+   111                              <1> %define sys_gettimeofday 96
+   112                              <1> %define sys_getrlimit 97
+   113                              <1> %define sys_getrusage 98
+   114                              <1> %define sys_sysinfo 99
+   115                              <1> %define sys_times 100
+   116                              <1> %define sys_ptrace 101
+   117                              <1> %define sys_getuid 102
+   118                              <1> %define sys_syslog 103
+   119                              <1> %define sys_getgid 104
+   120                              <1> %define sys_setuid 105
+   121                              <1> %define sys_setgid 106
+   122                              <1> %define sys_geteuid 107
+   123                              <1> %define sys_getegid 108
+   124                              <1> %define sys_setpgid 109
+   125                              <1> %define sys_getppid 110
+   126                              <1> %define sys_getpgrp 111
+   127                              <1> %define sys_setsid 112
+   128                              <1> %define sys_setreuid 113
+   129                              <1> %define sys_setregid 114
+   130                              <1> %define sys_getgroups 115
+   131                              <1> %define sys_setgroups 116
+   132                              <1> %define sys_setresuid 117
+   133                              <1> %define sys_getresuid 118
+   134                              <1> %define sys_setresgid 119
+   135                              <1> %define sys_getresgid 120
+   136                              <1> %define sys_getpgid 121
+   137                              <1> %define sys_setfsuid 122
+   138                              <1> %define sys_setfsgid 123
+   139                              <1> %define sys_getsid 124
+   140                              <1> %define sys_capget 125
+   141                              <1> %define sys_capset 126
+   142                              <1> %define sys_rt_sigpending 127
+   143                              <1> %define sys_rt_sigtimedwait 128
+   144                              <1> %define sys_rt_sigqueueinfo 129
+   145                              <1> %define sys_rt_sigsuspend 130
+   146                              <1> %define sys_sigaltstack 131
+   147                              <1> %define sys_utime 132
+   148                              <1> %define sys_mknod 133
+   149                              <1> %define sys_uselib 134
+   150                              <1> %define sys_personality 135
+   151                              <1> %define sys_ustat 136
+   152                              <1> %define sys_statfs 137
+   153                              <1> %define sys_fstatfs 138
+   154                              <1> %define sys_sysfs 139
+   155                              <1> %define sys_getpriority 140
+   156                              <1> %define sys_setpriority 141
+   157                              <1> %define sys_sched_setparam 142
+   158                              <1> %define sys_sched_getparam 143
+   159                              <1> %define sys_sched_setscheduler 144
+   160                              <1> %define sys_sched_getscheduler 145
+   161                              <1> %define sys_sched_get_priority_max 146
+   162                              <1> %define sys_sched_get_priority_min 147
+   163                              <1> %define sys_sched_rr_get_interval 148
+   164                              <1> %define sys_mlock 149
+   165                              <1> %define sys_munlock 150
+   166                              <1> %define sys_mlockall 151
+   167                              <1> %define sys_munlockall 152
+   168                              <1> %define sys_vhangup 153
+   169                              <1> %define sys_modify_ldt 154
+   170                              <1> %define sys_pivot_root 155
+   171                              <1> %define sys__sysctl 156
+   172                              <1> %define sys_prctl 157
+   173                              <1> %define sys_arch_prctl 158
+   174                              <1> %define sys_adjtimex 159
+   175                              <1> %define sys_setrlimit 160
+   176                              <1> %define sys_chroot 161
+   177                              <1> %define sys_sync 162
+   178                              <1> %define sys_acct 163
+   179                              <1> %define sys_settimeofday 164
+   180                              <1> %define sys_mount 165
+   181                              <1> %define sys_umount2 166
+   182                              <1> %define sys_swapon 167
+   183                              <1> %define sys_swapoff 168
+   184                              <1> %define sys_reboot 169
+   185                              <1> %define sys_sethostname 170
+   186                              <1> %define sys_setdomainname 171
+   187                              <1> %define sys_iopl 172
+   188                              <1> %define sys_ioperm 173
+   189                              <1> %define sys_create_module 174
+   190                              <1> %define sys_init_module 175
+   191                              <1> %define sys_delete_module 176
+   192                              <1> %define sys_get_kernel_syms 177
+   193                              <1> %define sys_query_module 178
+   194                              <1> %define sys_quotactl 179
+   195                              <1> %define sys_nfsservctl 180
+   196                              <1> %define sys_getpmsg 181
+   197                              <1> %define sys_putpmsg 182
+   198                              <1> %define sys_afs_syscall 183
+   199                              <1> %define sys_tuxcall 184
+   200                              <1> %define sys_security 185
+   201                              <1> %define sys_gettid 186
+   202                              <1> %define sys_readahead 187
+   203                              <1> %define sys_setxattr 188
+   204                              <1> %define sys_lsetxattr 189
+   205                              <1> %define sys_fsetxattr 190
+   206                              <1> %define sys_getxattr 191
+   207                              <1> %define sys_lgetxattr 192
+   208                              <1> %define sys_fgetxattr 193
+   209                              <1> %define sys_listxattr 194
+   210                              <1> %define sys_llistxattr 195
+   211                              <1> %define sys_flistxattr 196
+   212                              <1> %define sys_removexattr 197
+   213                              <1> %define sys_lremovexattr 198
+   214                              <1> %define sys_fremovexattr 199
+   215                              <1> %define sys_tkill 200
+   216                              <1> %define sys_time 201
+   217                              <1> %define sys_futex 202
+   218                              <1> %define sys_sched_setaffinity 203
+   219                              <1> %define sys_sched_getaffinity 204
+   220                              <1> %define sys_set_thread_area 205
+   221                              <1> %define sys_io_setup 206
+   222                              <1> %define sys_io_destroy 207
+   223                              <1> %define sys_io_getevents 208
+   224                              <1> %define sys_io_submit 209
+   225                              <1> %define sys_io_cancel 210
+   226                              <1> %define sys_get_thread_area 211
+   227                              <1> %define sys_lookup_dcookie 212
+   228                              <1> %define sys_epoll_create 213
+   229                              <1> %define sys_epoll_ctl_old 214
+   230                              <1> %define sys_epoll_wait_old 215
+   231                              <1> %define sys_remap_file_pages 216
+   232                              <1> %define sys_getdents64 217
+   233                              <1> %define sys_set_tid_address 218
+   234                              <1> %define sys_restart_syscall 219
+   235                              <1> %define sys_semtimedop 220
+   236                              <1> %define sys_fadvise64 221
+   237                              <1> %define sys_timer_create 222
+   238                              <1> %define sys_timer_settime 223
+   239                              <1> %define sys_timer_gettime 224
+   240                              <1> %define sys_timer_getoverrun 225
+   241                              <1> %define sys_timer_delete 226
+   242                              <1> %define sys_clock_settime 227
+   243                              <1> %define sys_clock_gettime 228
+   244                              <1> %define sys_clock_getres 229
+   245                              <1> %define sys_clock_nanosleep 230
+   246                              <1> %define sys_exit_group 231
+   247                              <1> %define sys_epoll_wait 232
+   248                              <1> %define sys_epoll_ctl 233
+   249                              <1> %define sys_tgkill 234
+   250                              <1> %define sys_utimes 235
+   251                              <1> %define sys_vserver 236
+   252                              <1> %define sys_mbind 237
+   253                              <1> %define sys_set_mempolicy 238
+   254                              <1> %define sys_get_mempolicy 239
+   255                              <1> %define sys_mq_open 240
+   256                              <1> %define sys_mq_unlink 241
+   257                              <1> %define sys_mq_timedsend 242
+   258                              <1> %define sys_mq_timedreceive 243
+   259                              <1> %define sys_mq_notify 244
+   260                              <1> %define sys_mq_getsetattr 245
+   261                              <1> %define sys_kexec_load 246
+   262                              <1> %define sys_waitid 247
+   263                              <1> %define sys_add_key 248
+   264                              <1> %define sys_request_key 249
+   265                              <1> %define sys_keyctl 250
+   266                              <1> %define sys_ioprio_set 251
+   267                              <1> %define sys_ioprio_get 252
+   268                              <1> %define sys_inotify_init 253
+   269                              <1> %define sys_inotify_add_watch 254
+   270                              <1> %define sys_inotify_rm_watch 255
+   271                              <1> %define sys_migrate_pages 256
+   272                              <1> %define sys_openat 257
+   273                              <1> %define sys_mkdirat 258
+   274                              <1> %define sys_mknodat 259
+   275                              <1> %define sys_fchownat 260
+   276                              <1> %define sys_futimesat 261
+   277                              <1> %define sys_newfstatat 262
+   278                              <1> %define sys_unlinkat 263
+   279                              <1> %define sys_renameat 264
+   280                              <1> %define sys_linkat 265
+   281                              <1> %define sys_symlinkat 266
+   282                              <1> %define sys_readlinkat 267
+   283                              <1> %define sys_fchmodat 268
+   284                              <1> %define sys_faccessat 269
+   285                              <1> %define sys_pselect6 270
+   286                              <1> %define sys_ppoll 271
+   287                              <1> %define sys_unshare 272
+   288                              <1> %define sys_set_robust_list 273
+   289                              <1> %define sys_get_robust_list 274
+   290                              <1> %define sys_splice 275
+   291                              <1> %define sys_tee 276
+   292                              <1> %define sys_sync_file_range 277
+   293                              <1> %define sys_vmsplice 278
+   294                              <1> %define sys_move_pages 279
+   295                              <1> %define sys_utimensat 280
+   296                              <1> %define sys_epoll_pwait 281
+   297                              <1> %define sys_signalfd 282
+   298                              <1> %define sys_timerfd_create 283
+   299                              <1> %define sys_eventfd 284
+   300                              <1> %define sys_fallocate 285
+   301                              <1> %define sys_timerfd_settime 286
+   302                              <1> %define sys_timerfd_gettime 287
+   303                              <1> %define sys_accept4 288
+   304                              <1> %define sys_signalfd4 289
+   305                              <1> %define sys_eventfd2 290
+   306                              <1> %define sys_epoll_create1 291
+   307                              <1> %define sys_dup3 292
+   308                              <1> %define sys_pipe2 293
+   309                              <1> %define sys_inotify_init1 294
+   310                              <1> %define sys_preadv 295
+   311                              <1> %define sys_pwritev 296
+   312                              <1> %define sys_rt_tgsigqueueinfo 297
+   313                              <1> %define sys_perf_event_open 298
+   314                              <1> %define sys_recvmmsg 299
+   315                              <1> %define sys_fanotify_init 300
+   316                              <1> %define sys_fanotify_mark 301
+   317                              <1> %define sys_prlimit64 302
+   318                              <1> %define sys_name_to_handle_at 303
+   319                              <1> %define sys_open_by_handle_at 304
+   320                              <1> %define sys_clock_adjtime 305
+   321                              <1> %define sys_syncfs 306
+   322                              <1> %define sys_sendmmsg 307
+   323                              <1> %define sys_setns 308
+   324                              <1> %define sys_getcpu 309
+   325                              <1> %define sys_process_vm_readv 310
+   326                              <1> %define sys_process_vm_writev 311
+   327                              <1> %define sys_kcmp 312
+   328                              <1> %define sys_finit_module 313
+   329                              <1> %define sys_sched_setattr 314
+   330                              <1> %define sys_sched_getattr 315
+   331                              <1> %define sys_renameat2 316
+   332                              <1> %define sys_memfd_create 319
+   333                                  
+   334                                  ;this is a hack that's 2 bytes smaller than mov!
+   335                                  %macro minimov 2
+   336                                  	push %2
+   337                                  	pop %1
+   338                                  %endmacro
+   339                                  
+   340                                  ; ==============================
+   341                                  ; ========= ELF HEADER =========
+   342                                  ; ==============================
+   343                                  
+   344                                  ehdr: ; Elf64_Ehdr
+   345                                  
+   346                                  e_ident:
+   347 00000000 7F454C4602010100        	db 0x7F, "ELF", 2, 1, 1, 0
+   348                                  
+   349                                  e_padding:
+   350                                  	;we have 8 bytes of padding to put code inside!
+   351                                  	;here we're about to close stderr so out program is quiet
+   352                                  	minimov rax, sys_close
+   353 00000008 6A03                <1>  push %2
+   354 0000000A 58                  <1>  pop %1
+   355                                  	minimov rdi, 2
+   356 0000000B 6A02                <1>  push %2
+   357 0000000D 5F                  <1>  pop %1
+   358 0000000E EB2C                    	jmp p_flags
+   359                                  
+   360                                  e_type:
+   361 00000010 0200                    	dw 2
+   362                                  e_machine:
+   363 00000012 3E00                    	dw 0x3e
+   364                                  e_version:
+   365 00000014 01000000                	dd 1
+   366                                  e_entry:
+   367 00000018 [0800000000000000]      	dq e_padding
+   368                                  e_phoff:
+   369 00000020 3800000000000000        	dq phdr - $$
+   370                                  e_shoff:
+   371 00000028 0000000000000000        	dq 0
+   372                                  e_flags:
+   373 00000030 00000000                	dd 0
+   374                                  e_ehsize:
+   375 00000034 3800                    	dw ehdrsize
+   376                                  e_phentsize:
+   377 00000036 3800                    	dw phdrsize
+   378                                  
+   379                                  ; fold the program header into the elf header
+   380                                  
+   381                                  ehdrsize equ $ - ehdr
+   382                                  
+   383                                  ; ==================================
+   384                                  ; ========= PROGRAM HEADER =========
+   385                                  ; ==================================
    386                                  
-   387                                  phdrsize	equ	 $ - phdr
+   387                                  phdr: ; Elf64_Phdr
    388                                  
-   389                                  __tag:
-   390                                  
-   391 00000070 626C61636B6C65          	db "blackle" ;it's me!
-   392                                  
-   393                                  _start:
-   394 00000077 0F05                    		syscall
-   395                                  
-   396                                  		; fork 
-   397                                  		minimov rax, sys_fork
-   398 00000079 6A39                <1>  push %2
-   399 0000007B 58                  <1>  pop %1
-   400 0000007C 0F05                    		syscall
-   401 0000007E 5F                      		pop	rdi
-   402 0000007F 4885C0                  		test rax,rax
-   403 00000082 741F                    		jz __parent
-   404                                  
-   405                                  __child:
-   406                                  		;dup2 read->stdin
-   407                                  		minimov rax, sys_dup2
-   408 00000084 6A21                <1>  push %2
-   409 00000086 58                  <1>  pop %1
-   410                                  		; pop	rdi
-   411                                  		; xor rsi,rsi
-   412 00000087 0F05                    		syscall
-   413                                  
-   414                                  		;close the write end
-   415                                  		; apparently we don't need this as parent?
-   416                                  		; minimov rax, sys_close
-   417                                  		; shr rdi, 32
-   418                                  		; syscall
-   419                                  
-   420                                  		; envp -> rdx
-   421                                  		; pop rdx ;argc
-   422                                  		; inc rdx ;argc + 1
-   423                                  		; shl rdx, 3 ; (argc+1)*8
-   424                                  
-   425                                  		; assume argc = 1
-   426                                  		minimov rdx, 16+8
-   427 00000089 6A18                <1>  push %2
-   428 0000008B 5A                  <1>  pop %1
-   429 0000008C 4801E2                  		add rdx,rsp
-   430                                  
-   431                                  		;setup argv
-   432 0000008F 6A00                    		push 0
-   433 00000091 68[F2000000]            		push __aplay
+   389                                  p_type:
+   390 00000038 01000000                	dd 1
+   391                                  
+   392                                  p_flags:
+   393                                  	;p_flags is supposed to be 0x0f, and syscall is 0x0f05;
+   394                                  	;the kernel only looks at the bottom byte, so I can put code here!
+   395 0000003C 0F05                    	syscall
+   396 0000003E EB10                    	jmp p_paddr
+   397                                  
+   398                                  p_offset:
+   399 00000040 0000000000000000        	dq 0
+   400                                  p_vaddr:
+   401 00000048 [0000000000000000]      	dq $$
+   402                                  
+   403                                  p_paddr: ;apparently p_paddr can be nonsense?
+   404                                  	;move stack up
+   405 00000050 50                      	push rax
+   406                                  	; pipe with fds on stack
+   407                                  	minimov rax, sys_pipe
+   408 00000051 6A16                <1>  push %2
+   409 00000053 58                  <1>  pop %1
+   410                                  	minimov rdi, rsp
+   411 00000054 54                  <1>  push %2
+   412 00000055 5F                  <1>  pop %1
+   413 00000056 EB29                    	jmp _start
+   414                                  
+   415                                  p_filesz:
+   416 00000058 0001000000000000        	dq filesize
+   417                                  p_memsz:
+   418 00000060 0001000000000000        	dq filesize
+   419                                  p_align:
+   420 00000068 1000000000000000        	dq 0x10
+   421                                  
+   422                                  phdrsize equ $ - phdr
+   423                                  
+   424                                  ; ==================================
+   425                                  ; ========= AUTHOR NAME ;3 =========
+   426                                  ; ==================================
+   427                                  
+   428                                  blackle:
+   429                                  	;a null terminator so `strings` will find it >;3c
+   430 00000070 6D6164652062792062-     	db "made by blackle!",0 ;it's me!
+   431 00000079 6C61636B6C652100   
+   432                                  	;this is a lot of unused bytes
+   433                                  
    434                                  
-   435                                  		; call aplay
-   436                                  		minimov rax, sys_execve
-   437 00000096 6A3B                <1>  push %2
-   438 00000098 58                  <1>  pop %1
-   439                                  		minimov	rdi, __aplay
-   440 00000099 68[F2000000]        <1>  push %2
-   441 0000009E 5F                  <1>  pop %1
-   442                                  		minimov	rsi, rsp
-   443 0000009F 54                  <1>  push %2
-   444 000000A0 5E                  <1>  pop %1
-   445 000000A1 0F05                    		syscall
+   435                                  ; ===========================
+   436                                  ; ========= CODE!!! =========
+   437                                  ; ===========================
+   438                                  
+   439                                  _start:
+   440                                  	;we actually started execution in e_padding and jumped to
+   441                                  	;p_flags and then p_paddr. so check out that code if you haven't already
+   442 00000081 0F05                    	syscall
+   443                                  
+   444                                  	;get the pipe fds into rdi
+   445 00000083 5F                      	pop	rdi 
    446                                  
-   447                                  	; anything can go here
-   448                                  
-   449                                  __parent:
-   450                                  		;get pipe write fd
-   451 000000A3 48C1EF20                		shr rdi, 32
-   452                                  
-   453                                  		; xor r15, r15
-   454                                  __reset:
-   455 000000A7 4D31F6                  		xor r14, r14
-   456                                  __sampleloop:
-   457 000000AA 49FFC6                  		inc r14
-   458                                  		
-   459 000000AD 4157                    		push r15
-   460 000000AF 4D31F5                  		xor r13, r14
-   461 000000B2 49D1ED                  		shr r13, 1
-   462                                  
-   463 000000B5 664181FE0008            		cmp r14w, 1024*2
-   464 000000BB 7711                    		ja __noror
-   465                                  		; xor r13, r14
-   466 000000BD 490FCF                  		bswap r15
-   467 000000C0 49F7D7                  		not r15
-   468                                  
-   469 000000C3 664181FE0002            		cmp r14w, 512
-   470 000000C9 7703                    		ja __noror
-   471                                  		; dec r13
-   472 000000CB 410FCD                  		bswap r13d
-   473                                  
-   474                                  __noror:
-   475 000000CE 4D31EF                  		xor r15, r13
-   476 000000D1 49C1CF08                		ror r15, 8
-   477 000000D5 49F7D7                  		not r15
+   447                                  	; fork 
+   448                                  	minimov rax, sys_fork
+   449 00000084 6A39                <1>  push %2
+   450 00000086 58                  <1>  pop %1
+   451 00000087 0F05                    	syscall
+   452 00000089 4885C0                  	test rax,rax
+   453 0000008C 741B                    	jz parent
+   454                                  
+   455                                  ; ===============================
+   456                                  ; ========= APLAY CHILD =========
+   457                                  ; ===============================
+   458                                  
+   459                                  child:
+   460                                  	;dup2 read->stdin
+   461                                  	minimov rax, sys_dup2
+   462 0000008E 6A21                <1>  push %2
+   463 00000090 58                  <1>  pop %1
+   464                                  	;normally we have to clear rsi for stdin (0), but
+   465                                  	;the register starts at 0 and we haven't touched it yet
+   466                                  
+   467                                  	;also we'd usually mask out the lower bytes of rdi
+   468                                  	;to get the read end of the pipe, but the kernel
+   469                                  	;only looks at the lower bytes anyway
+   470 00000091 0F05                    	syscall
+   471                                  
+   472                                  	; this puts envp into rdx, assuming argc = 1
+   473                                  	; this is magic ;3
+   474                                  	minimov rdx, 16+8
+   475 00000093 6A18                <1>  push %2
+   476 00000095 5A                  <1>  pop %1
+   477 00000096 4801E2                  	add rdx,rsp
    478                                  
-   479                                  
-   480 000000D8 664181FE0020            		cmp r14w, 1024*8
-   481 000000DE 75CA                    		jnz __sampleloop
+   479                                  	;setup argv as {"/bin/aplay", 0}
+   480 00000099 6A00                    	push 0
+   481 0000009B 68[F2000000]            	push aplay_string
    482                                  
-   483                                  		minimov rsi, rsp
-   484 000000E0 54                  <1>  push %2
-   485 000000E1 5E                  <1>  pop %1
-   486                                  		minimov rdx, 1024*8*8
-   487 000000E2 6800000100          <1>  push %2
-   488 000000E7 5A                  <1>  pop %1
-   489                                  		minimov rax, sys_write
-   490 000000E8 6A01                <1>  push %2
-   491 000000EA 58                  <1>  pop %1
-   492                                  		; minimov rdi, 1
-   493 000000EB 0F05                    		syscall
-   494                                  
-   495 000000ED 4829D4                  		sub rsp, rdx
-   496 000000F0 EBB5                    		jmp __reset
+   483                                  	; execve aplay
+   484                                  	minimov rax, sys_execve
+   485 000000A0 6A3B                <1>  push %2
+   486 000000A2 58                  <1>  pop %1
+   487                                  
+   488                                  	; we just pushed the address to aplay_string so
+   489                                  	; we can pop it into rdi instead of doing another minimov
+   490 000000A3 5F                      	pop rdi
+   491 000000A4 57                      	push rdi
+   492                                  
+   493                                  	minimov	rsi, rsp
+   494 000000A5 54                  <1>  push %2
+   495 000000A6 5E                  <1>  pop %1
+   496 000000A7 0F05                    	syscall
    497                                  
-   498                                  __aplay:
-   499 000000F2 2F7573722F62696E2F-     		db '/usr/bin/aplay';,0,0 ;<-- these last two could be removed
-   500 000000FB 61706C6179         
+   498                                  ; ============================================
+   499                                  ; ========= SAMPLE GENERATING PARENT =========
+   500                                  ; ============================================
    501                                  
-   502                                  __end_of_file:
-   503                                  
-   504                                  filesize	equ	$ - $$
+   502                                  parent:
+   503                                  	;get pipe write fd by shifting down the upper bytes
+   504 000000A9 48C1EF20                	shr rdi, 32
+   505                                  
+   506                                  	;we want r14, r15, and r13 to be zero but we haven't 
+   507                                  	;touched them, and the kernel initialized them that way
+   508                                  	;so we don't have to do anything! :D
+   509                                  sample_loop:
+   510 000000AD 49FFC6                  	inc r14
+   511                                  
+   512                                  	;push r15 onto the stack as 8 packed samples
+   513 000000B0 4157                    	push r15
+   514                                  
+   515                                  	;do some weird stuff to r13
+   516 000000B2 4D31F5                  	xor r13, r14
+   517 000000B5 49D1ED                  	shr r13, 1
+   518                                  
+   519                                  	;make the last 2 bars sound different
+   520                                  	;comparing on r14w is a byte smaller somehow
+   521 000000B8 664181FE0008            	cmp r14w, 1024*2
+   522 000000BE 7711                    	ja sample_loop_end
+   523 000000C0 490FCF                  	bswap r15
+   524 000000C3 49F7D7                  	not r15
+   525                                  
+   526                                  	;make the last half-bar sound noisy
+   527 000000C6 664181FE0002            	cmp r14w, 512
+   528 000000CC 7703                    	ja sample_loop_end
+   529 000000CE 410FCD                  	bswap r13d
+   530                                  
+   531                                  sample_loop_end:
+   532                                  	;do some weird stuff to r15 that sounds cool
+   533 000000D1 4D31EF                  	xor r15, r13
+   534 000000D4 49C1CF08                	ror r15, 8
+   535 000000D8 49F7D7                  	not r15 ;this makes it sound like a ring modulator?
+   536                                  
+   537                                  	;repeatedly create samples until we have 8 "bars"
+   538 000000DB 664181FE0020            	cmp r14w, 1024*8
+   539 000000E1 75CA                    	jnz sample_loop
+   540                                  
+   541                                  write_loop
+   542                                  	;write generated samples to pipe
+   543                                  	minimov rsi, rsp
+   544 000000E3 54                  <1>  push %2
+   545 000000E4 5E                  <1>  pop %1
+   546                                  	minimov rdx, 1024*8*8
+   547 000000E5 6800000100          <1>  push %2
+   548 000000EA 5A                  <1>  pop %1
+   549                                  	minimov rax, sys_write
+   550 000000EB 6A01                <1>  push %2
+   551 000000ED 58                  <1>  pop %1
+   552                                  	;uncomment this if you want to write samples to stdout
+   553                                  	;good for saving to a file!
+   554                                  	; minimov rdi, 1
+   555 000000EE 0F05                    	syscall
+   556                                  
+   557                                  	;keep writing those same samples until we're killed
+   558 000000F0 EBF1                    	jmp write_loop
+   559                                  
+   560                                  ; ================================
+   561                                  ; ========= STRING TABLE =========
+   562                                  ; ================================
+   563                                  
+   564                                  ;just one string :3
+   565                                  
+   566                                  aplay_string:
+   567                                  	;this should be null terminated, but there is 0s in
+   568                                  	;memory after this that the kernel filled in for us
+   569 000000F2 2F7573722F62696E2F-     	db '/usr/bin/aplay'
+   570 000000FB 61706C6179         
+   571                                  
+   572                                  filesize	equ	$ - $$
