@@ -201,7 +201,7 @@ sample_loop_end:
 	cmp r14w, 1024*8
 	jnz sample_loop
 
-write_loop
+write_loop:
 	;write generated samples to pipe
 	minimov rsi, rsp
 	minimov rdx, 1024*8*8
