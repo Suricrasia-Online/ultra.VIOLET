@@ -6,7 +6,7 @@
 BITS 64
 
 ;the address offset for x86-64
-org	 0x00400000
+org 0x00400000
 
 ;a bunch of definitions so I don't have to memorize syscall numbers
 %include "syscalls.asm"
