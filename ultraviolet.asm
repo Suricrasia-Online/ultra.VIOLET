@@ -225,4 +225,4 @@ aplay_string:
 	;memory after this that the kernel filled in for us
 	db '/usr/bin/aplay'
 
-filesize	equ	$ - $$
+filesize equ $ - $$
