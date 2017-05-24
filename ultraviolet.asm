@@ -115,7 +115,7 @@ _start:
 	syscall
 
 	;get the pipe fds into rdi
-	pop	rdi 
+	pop rdi 
 
 	; fork 
 	minimov rax, sys_fork
